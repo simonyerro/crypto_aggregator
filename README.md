@@ -1,15 +1,19 @@
-# Crypto aggregator
+# Crypto aggregator (This README is not up-to-date)
 
 The goal is to write a tool to aggregate the balances from your different wallet on multiple layer 1
 
-In my case, I have **ETH** on metamask, **ADA** on Yoroi and **SOL** on Phantom
+In my case, I have **ETH** on metamask, **ADA** on Yoroi and **SOL** and other layers 2 on Phantom, additional crypto on Binance...
 
 ## Description
 
-* The first step is to find API to do so. I can retrieve my ETH balance using api.blockchair.com
-* I also use openexchangerates.org/api to convert the given balance to any traditional currency
+There are currently two distinct tools written:
 
-## How to use
+* **get_eth_wallet_balance**, A function to get the balance of an ETH address in any currency wanted
+* **compute_holding**, A function to get the value of your total portfolio providing a portfolio.json file with the quantity of each token (You can take a look at example_portfolio.json).
+
+    Since I don't buy very often, I thought this would do the work for now
+
+## How to use 
 
 You need to provide an API key for the openexchangerates API and your ETH address
 You can provide a .env file looking like this:

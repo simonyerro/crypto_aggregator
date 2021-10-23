@@ -1,2 +1,4 @@
 *.json
+!example_portfolio.json
 .env
+__pycache__

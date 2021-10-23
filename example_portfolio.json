@@ -1,0 +1,20 @@
+{
+    "invested": {
+        "quantity": 123456,
+        "currency": "EUR"
+    },
+    "data":{
+        "ETH": {    
+            "quantity": 3.21,
+            "where": "Metamask"
+        },
+        "ADA": {    
+            "quantity": 12345.4321,
+            "where": "Yoroi wallet"
+        },
+        "ALEPH": {    
+            "quantity": 762.6479,
+            "where": "Phantom wallet"
+        }
+    }  
+}
