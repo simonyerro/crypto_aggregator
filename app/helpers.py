@@ -2,6 +2,8 @@ import requests
 import json
 import sys
 
+COINMARKETCAP_API_URL = 'https://pro-api.coinmarketcap.com/v1'
+
 def _dump(file, namefile):
     with open(namefile, 'w') as outfile:
         json.dump(file, outfile)
@@ -9,6 +11,26 @@ def _dump(file, namefile):
 def _load(namefile):
     with open(namefile) as json_file:
         return json.load(json_file)
+
+def _get_map(app_id, namefile):
+    """
+    Get mapping of symbols and slug to unique coinmarketcap id
+
+    :param app_id:   string, the API ID required to use the API
+    :param namefile: string, the name of the file where we drop the API return call for caching
+    :return:         dict,  mapping of the symbols to unique coinmaketcap id
+    """
+    headers = {'X-CMC_PRO_API_KEY': app_id}
+    try:
+        r = requests.get('{}/cryptocurrency/map'.format(COINMARKETCAP_API_URL), headers=headers)
+    except requests.exceptions.RequestException as e:
+        sys.exit("Something went wrong: {}".format(e))
+    if r.status_code != 200:
+        sys.exit("Something went wrong with your call API: {}\n{}".format(r.status_code, r.json()))
+    
+    map_id = r.json()['data']
+    _dump(map_id, namefile)
+    return map_id
 
 def _get_rates(app_id, currency, namefile):
     """
@@ -52,7 +74,7 @@ def get_currency_rate(app_id, cache, currency, namefile):
             sys.exit("This currency ({}) is not supported, It has to be a 3-letter code: ".format(currency))
         return cached_currency[currency]
     else:
-        return _get_rates(currency=currency)
+        return _get_rates(app_id, currency, namefile)
 """
 coinmarketcap_api_key
 """
@@ -67,7 +89,7 @@ def _get_fiat(api_key, currency, namefile):
     """
     headers = {'X-CMC_PRO_API_KEY': api_key}
     try:
-        r = requests.get('https://pro-api.coinmarketcap.com/v1/fiat/map'.format(), headers=headers)
+        r = requests.get('{}/fiat/map'.format(COINMARKETCAP_API_URL), headers=headers)
     except requests.exceptions.RequestException as e:
         sys.exit("Exception when getting latest currencies fiat: {}".format(e))
     if r.status_code != 200:
@@ -102,7 +124,7 @@ def get_currency_fiat(api_key, cache, currency, namefile):
                 return cur
         sys.exit("This currency ({}) is not supported, It has to be a 3-letter code: ".format(currency))
     else:
-        return _get_fiat(currency)
+        return _get_fiat(api_key, currency, namefile)
 
 def compute_holding(api_key, portfolio_filename, currency):
     """
@@ -111,34 +133,36 @@ def compute_holding(api_key, portfolio_filename, currency):
     :param api_key:            string,  the API key required to use the API
     :param portfolio_filename: string,  json file containing the info about your owned tokens
     :param currency:           string,  the currency wanted
-    :return:                   dict,    containing the name, symbol, sign and coinmarketcap id
+    :return:                   dict,    value of each coins holded
     """
-    headers = {'X-CMC_PRO_API_KEY': api_key}
-    payload = {'limit': '3000', 'sort': 'market_cap', 'convert': currency}
     try:
-        r = requests.get('https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest'.format(), headers=headers, params=payload)
+        portfolio = _load(portfolio_filename)
+    except FileNotFoundError:
+        sys.exit("No {} file found".format(portfolio_filename))
+
+    slugs = ','.join(portfolio['data'][e]['slug'] for e in portfolio['data'])
+
+    headers = {'X-CMC_PRO_API_KEY': api_key}
+    payload = {'slug': slugs, 'convert': currency}
+
+    try:
+        r = requests.get('{}/cryptocurrency/quotes/latest'.format(COINMARKETCAP_API_URL), headers=headers, params=payload)
     except requests.exceptions.RequestException as e:
         sys.exit("Something went wrong: {}".format(e))
     if r.status_code != 200:
         sys.exit("Something went wrong with your call API: {}\n{}".format(r.status_code, r.json()))
-    try:
-        currency_hold = _load(portfolio_filename)
-    except FileNotFoundError:
-        sys.exit("No {} file found".format(portfolio_filename))
-    invested = currency_hold['invested']['quantity']
-    sum = 0
-    res = {}
-    for cur in r.json()['data']:
-        if cur['symbol'] in currency_hold['data']:
-            hold = currency_hold['data'][cur['symbol']]
-            value = cur['quote'][currency]['price'] * hold['quantity']
-            sum += value
-            res[cur['symbol']] = {
-                'price': cur['quote'][currency]['price'],
-                'quantity': hold['quantity'],
-                'value': cur['quote'][currency]['price'] * hold['quantity'],
-                'currency': currency,
-            }
+    invested = portfolio['invested']['quantity']
+    sum, res, quotes = 0, {}, r.json()['data']
+    for cur in quotes:
+        hold = portfolio['data'][quotes[cur]['symbol']]
+        value = quotes[cur]['quote'][currency]['price'] * hold['quantity']
+        sum += value
+        res[quotes[cur]['symbol']] = {
+            'price': quotes[cur]['quote'][currency]['price'],
+            'quantity': hold['quantity'],
+            'value': quotes[cur]['quote'][currency]['price'] * hold['quantity'],
+            'currency': currency,
+        }
     res['total'] = {
         'value': sum,
         'currency': currency,
