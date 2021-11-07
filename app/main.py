@@ -4,25 +4,25 @@ Run the app
 
 import os
 import secrets
-import json
 from dotenv import load_dotenv
 import helpers
 
 from models import Portfolio
 
 from fastapi import FastAPI, Depends, HTTPException, Request
-import firebase_admin
+from firebase_admin import initialize_app, auth
 from google.cloud import firestore
 
-firebase_admin.initialize_app()
+initialize_app()
 db = firestore.Client()
 load_dotenv()
 
 app = FastAPI()
 load_dotenv()
 coinmarketcap_api_key = os.getenv('COINMARKETCAP_API')
+firebase_api_key = os.getenv('FIREBASE_API_KEY')
 
-def auth(api_key):
+def authenticate(api_key):
     user = db.collection('users').document(api_key).get()
     if user.exists:
         return user
@@ -31,7 +31,7 @@ def auth(api_key):
     )
 
 @app.get('/signin')
-def authenticate():
+def signin():
     api_key = secrets.token_urlsafe(64)
     db.collection('users').document(api_key).set({})
     return {
@@ -39,7 +39,7 @@ def authenticate():
         'message': 'save_this_carefully'
     }
 
-@app.get('/portfolio', dependencies = [Depends(auth)])
+@app.get('/portfolio', dependencies = [Depends(authenticate)])
 def get_portfolio_value(request: Request):
     api_key = request.query_params['api_key']
     portfolio = db.collection('portfolio').document(api_key).get()
@@ -50,7 +50,7 @@ def get_portfolio_value(request: Request):
         status_code=403, detail="Could not validate credentials"
     )
 
-@app.put("/portfolio", dependencies = [Depends(auth)])
+@app.put("/portfolio", dependencies = [Depends(authenticate)])
 def put_portfolio(portfolio: Portfolio, request: Request):
     api_key = request.query_params['api_key']
     db.collection('portfolio').document(api_key).set(portfolio.dict())

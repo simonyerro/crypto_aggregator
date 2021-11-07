@@ -141,7 +141,7 @@ def compute_holding(api_key, portfolio, currency):
     Compute the value of your portfolio given the quantity of each token owned
 
     :param api_key:            string,  the API key required to use the API
-    :param portfolio_filename: dict,  dict containing the info about your owned tokens
+    :param portfolio: dict,  dict containing the info about your owned tokens
     :param currency:           string,  the currency wanted
     :return:                   dict,    value of each coins holded
     """
