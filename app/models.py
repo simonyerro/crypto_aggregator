@@ -1,13 +1,22 @@
-from typing import Optional
+"""
+Pydantic models to validate the json file structure
+"""
+
+from typing import Optional, Dict
 from pydantic import BaseModel
 
-class token(BaseModel):
+class Token(BaseModel):
     slug: str
     quantity: float
     where: Optional[str] = None
 
-# class portfolio(BaseModel):
-#     invested: 
+class Invested(BaseModel):
+    quantity: float
+    currency: str
+
+class Portfolio(BaseModel):
+    invested: Optional[Invested] = None
+    data: Dict[str, Token]
 
 
 # {
@@ -15,11 +24,11 @@ class token(BaseModel):
 #         "quantity": 11000,
 #         "currency": "EUR"
 #     },
-#     "data":{
-#         "ETH": {
+#     "data":[
+#             {
 #             "slug": "ethereum",    
 #             "quantity": 0.7722,
 #             "where": "Metamask"
 #         },
-#     }  
+#     ]
 # }
