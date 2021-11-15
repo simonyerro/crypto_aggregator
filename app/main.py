@@ -6,6 +6,7 @@ import os
 import secrets
 from dotenv import load_dotenv
 import helpers
+import requests
 
 from models import Portfolio
 
@@ -30,14 +31,42 @@ def authenticate(api_key):
         status_code=403, detail="Could not validate credentials"
     )
 
-@app.get('/signin')
-def signin():
-    api_key = secrets.token_urlsafe(64)
-    db.collection('users').document(api_key).set({})
-    return {
-        'token': api_key,
-        'message': 'save_this_carefully'
-    }
+# @app.get('/signin')
+# def signin():
+#     api_key = secrets.token_urlsafe(64)
+#     db.collection('users').document(api_key).set({})
+#     return {
+#         'token': api_key,
+#         'message': 'save_this_carefully'
+#     }
+
+# def SignIn(email,password):
+#     details={
+#         'email':email,
+#         'password':password,
+#         'returnSecureToken': True
+#     }
+#     print(firebase_api_key)
+#     #Post request
+#     r=requests.post('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={firebase_api_key}',data=details)
+#     #check for errors
+#     if 'error' in r.json().keys():
+#         return {'status':'error','message':r.json()['error']['message']}
+#     #success
+#     if 'idToken' in r.json().keys() :
+#             return {'status':'success','idToken':r.json()['idToken']}
+
+# @app.get('/signin')
+# def signin():
+#     return SignIn('user@example.com', 'password')
+    # user = auth.create_user(
+    #     email='user@example.com',
+    #     email_verified=False,
+    #     password='secretPassword',
+    #     disabled=False,
+    #     returnSecureToken=True
+    # )
+    # return user
 
 @app.get('/portfolio', dependencies = [Depends(authenticate)])
 def get_portfolio_value(request: Request):
